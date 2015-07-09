@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+
+'use strict';
+
+var program     = require('commander');
+var _           = require('lodash');
+var Producer    = require('./Producer');
+var OpGenerator = require('./OpGenerator');
+var Logger      = require('./Logger');
+
+
+function parsePorts(portList) {
+
+    var ports = portList.split(',');
+
+    if (!program.throughputs || !program.throughputs.length || (program.throughputs.length>1 && program.throughputs.length !== ports.length) ) {
+        console.error('Ports must have length 1 or be equal to length of Throughputs');
+        process.exit(1);
+    }
+    // don't try to start a server on low ports or invalid ports
+    if (_.any(ports, function(port){
+            return port<1024 || port > 65535;
+        })) {
+        console.error('Invalid port value, out of range [1024, 65535]');
+        process.exit(1);
+    }
+
+    return ports;
+}
+
+function parseThroughputs(throughputList) {
+    var throughputs = throughputList.split(',');
+
+    if (_.any(throughputs, function(throughput){
+            return isNaN(throughput)   ||
+                throughput < 0     ||
+                throughput > 100
+
+        })) {
+        console.log('Invalid Throughput value found');
+        process.exit(1);
+    }
+
+    return throughputs;
+}
+
+program
+    .version('0.0.1')
+    .option('-t, --throughputs [throughput1,throughput2, ...]', 'average throughput of each server between 0 (unthrottled) to 100. [10]', parseThroughputs, [10])
+    .option('-p, --ports [port1,port2,...]', 'list of ports where a server will be started [3000]', parsePorts, [3000]);
+
+
+program.on('--help', function() {
+    console.log('Attempts to start a Producer for each port in --ports.');
+    console.log('Port values outside range [1024,65535] are rejected.');
+    console.log('Throughputs can be assigned with a single value, which will apply to all Producers,');
+    console.log('or a list matching the --ports list for custom throughput for each Producer.');
+});
+
+program
+    .parse(process.argv);
+
+_.each(program.ports, function(port, index) {
+    Producer({
+        source: new OpGenerator({
+            throughput: program.throughputs[index] || program.throughputs[0]
+        }),
+        port: port,
+        txLogger: new Logger({ filename: './logs/ProducerTxLog_' + index + '.log'}),
+        rxLogger: new Logger({ filename: './logs/ProducerRxLog_' + index + '.log'})
+    });
+
+});
+

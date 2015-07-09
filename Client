@@ -1,0 +1,77 @@
+#!/usr/bin/env node
+
+'use strict';
+
+var net        = require('net');
+var program    = require('commander');
+var merge      = require('merge-stream');
+var _          = require('lodash');
+var Consumer   = require('./Consumer');
+
+function parseAddresses(addressList) {
+
+    var validIp = /\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/;
+
+    var addresses =  addressList.split(',');
+
+    if (_.any(addresses,
+            function(address) {
+                return !validIp.test(address)
+            } )
+    ) {
+        console.error('Invalid Server IP Address found.');
+        process.exit(1);
+    }
+
+    return addresses;
+}
+
+function parsePorts(portList) {
+
+    var ports = portList.split(',');
+    if (!program.addresses || !program.addresses.length || (program.addresses.length>1 && program.addresses.length !== ports.length) ) {
+        console.error('Server IP Addresses must have length 1 or be equal to length of Server Port Numbers');
+        process.exit(1);
+    }
+
+    if ( _.any(ports,
+            function(port) {
+                return  isNaN(port)       ||  // port is not a number
+                    port.match(/\./)  ||  // or is a float
+                    port < 1024        ||  // or is less than 1024
+                    port > 65535;
+            })
+    ) {
+        console.error('Invalid Server Port Number found.');
+        process.exit(1);
+    }
+
+    return ports;
+}
+
+program
+    .version('0.0.1')
+    .option('-a, --addresses [ip1,ip2,...]', 'Server IP Addresse(s), single address or comma separated', parseAddresses, ['localhost'])
+    .option('-p, --ports [port1,port2,...]', 'Server Port Number(s), single comma separated', parsePorts, [3000])
+    .parse(process.argv);
+
+console.log('ports: %j', program.ports);
+console.log('addresses: %j', program.addresses );
+
+var producers = _.map( program.ports, function(port, index) {
+    return {
+        port: port,
+        address: program.addresses[index] || program.addresses[0] // if a single server is passed, its IP is replicated
+    }
+});
+
+var consumer = new Consumer({
+    producers: producers,
+    logFilenameBase: './logs/Consumer'
+});
+
+process.on('SIGINT', function() {
+    // send FIN packet to server
+    consumer.end();
+    process.exit();
+});

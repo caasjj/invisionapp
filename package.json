@@ -1,0 +1,38 @@
+{
+  "name": "invisionapp",
+  "version": "0.0.1",
+  "description": "Producer / Consumer demo app",
+  "main": "Client.js",
+  "dependencies": {
+    "commander": "^2.8.1",
+    "lodash": "^3.10.0",
+    "merge-stream": "^0.1.8",
+    "through2": "^2.0.0",
+    "winston": "^1.0.1"
+  },
+  "devDependencies": {
+    "chai": "^3.0.0",
+    "mocha": "^2.2.5",
+    "should": "^7.0.1"
+  },
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha",
+    "start": "node server.js",
+    "postinstall": "rm -rf ./logs ./test/logs; mkdir ./logs ./test/logs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/caasjj/invisionapp.git"
+  },
+  "keywords": [
+    "invision",
+    "producer",
+    "consumer"
+  ],
+  "author": "Walid Hosseini",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/caasjj/invisionapp/issues"
+  },
+  "homepage": "https://github.com/caasjj/invisionapp#readme"
+}
