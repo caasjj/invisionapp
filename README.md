@@ -14,7 +14,7 @@ The Producer sends messages of the form `xxxx[+|-|*|/]yyyy=`, where `xxxx` and `
 
 Clone the repo with: 
 
-`git clone https://github.com/caasjj/prodcons.git`
+`git clone https://github.com/caasjj/invisionapp.git`
 
 Install node dependencies:
 
